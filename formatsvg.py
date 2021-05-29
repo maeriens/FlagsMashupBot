@@ -299,40 +299,6 @@ class CountryMixer:
 
         self.svgText = self.svgText.replace('ç', '#')
 
-    def calculateNames(self):
-        name1 = self.first_country['name']
-        name2 = self.second_country['name']
-
-        if "(" in name1:
-            p_temp = name1.split("(")
-            name1 = p_temp[1].replace(")", "") + " " + p_temp[0]
-
-        if "(" in name2:
-            p_temp = name2.split("(")
-            name2 = p_temp[1].replace(")", "") + " " + p_temp[0]
-
-        if "," in name1:
-            p_temp = name1.split(", ")
-            name1 = p_temp[1] + " " + p_temp[0]
-
-        if "," in name2:
-            p_temp = name2.split(", ")
-            name2 = p_temp[1] + " " + p_temp[0]
-
-        self.first_country['name'] = name1
-        self.second_country['name'] = name2
-
-        if len(name2.split()) > 1:
-            name = (" ".join(name2.split()[:-1]) + " " + name1.split()[-1])
-        elif len(name1.split()) > 1:
-            name = (" ".join(name1.split()[:-1]) + " " + name2.split()[-1])
-        else:
-            name = NameJoiner(
-                self.first_country['name'], self.second_country['name']).join()
-        if name1 == name2:
-            name = name1 + " 2"
-        return name
-
     def saveToPNG(self):
         image = Image.open(f'{self.template3Code.lower()}.png')
         width, height = image.size
@@ -390,11 +356,15 @@ class CountryMixer:
         print("Base is " + self.template3Code)
         print(self.first_country['alpha3Code'],
               self.second_country['alpha3Code'])
-        name = self.calculateNames()
+
+        name_joiner = NameJoiner(self.first_country['name'], self.second_country['name'])
+        name = name_joiner.get_mashup_name()
+        normalized_first = name_joiner.first_country
+        normalized_second = name_joiner.second_country
         print(name)
 
         self.removePNGs()
-        return [self.first_country["name"], self.second_country["name"]], self.getFlagsEmojis(), name
+        return [normalized_first, normalized_second, self.getFlagsEmojis(), name]
 
 
 c = CountryMixer()
