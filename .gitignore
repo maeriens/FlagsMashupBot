@@ -11,3 +11,6 @@ pyvenv.cfg
 
 # Generated PNGs
 *.png
+
+# Codecov
+.coverage
