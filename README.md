@@ -22,7 +22,7 @@ git clone https://github.com/antooro/FlagsMashupBot
 ### Start a virtual environment
 **LINUX/OSX**: Inside the repo folder
 ```bash
-python -m ./ # starts the venv in the current folder
+python3 -m venv ./ # starts the venv in the current folder
 source bin/activate # On LINUX or OSX
 .\Scripts\activate # ONLY Windows
 ```
