@@ -4,6 +4,7 @@ CairoSVG==2.5.2
 certifi==2021.10.8
 cffi==1.15.0
 charset-normalizer==2.0.10
+coverage==6.2
 cssselect2==0.4.1
 defusedxml==0.7.1
 idna==3.3
