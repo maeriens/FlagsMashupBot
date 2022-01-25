@@ -11,7 +11,7 @@ import requests
 from PIL import Image
 from bs4 import BeautifulSoup
 
-from names import NameJoiner
+from names import get_mashup_name
 
 API_URL = 'https://restcountries.com/v3.1'
 
@@ -294,38 +294,6 @@ class CountryMixer:
 
         self.svgText = self.svgText.replace('ç', '#')
 
-    def calculateNames(self):
-        name1 = self.first_country['name']['common']
-        name2 = self.second_country['name']['common']
-
-        if "(" in name1:
-            p_temp = name1.split("(")
-            name1 = p_temp[1].replace(")", "") + " " + p_temp[0]
-
-        if "(" in name2:
-            p_temp = name2.split("(")
-            name2 = p_temp[1].replace(")", "") + " " + p_temp[0]
-
-        if "," in name1:
-            p_temp = name1.split(", ")
-            name1 = p_temp[1] + " " + p_temp[0]
-
-        if "," in name2:
-            p_temp = name2.split(", ")
-            name2 = p_temp[1] + " " + p_temp[0]
-
-        self.first_country['name']['common'] = name1
-        self.second_country['name']['common'] = name2
-
-        if name1 == name2:
-            return name1 + ' 2'
-
-        if len(name2.split()) > 1:
-            return " ".join(name2.split()[:-1]) + " " + name1.split()[-1]
-        elif len(name1.split()) > 1:
-            return " ".join(name1.split()[:-1]) + " " + name2.split()[-1]
-        else:
-            return NameJoiner(self.first_country['name']['common'], self.second_country['name']['common']).join()
 
     def saveToPNG(self):
         image = Image.open(f'{self.template3Code.lower()}.png')
@@ -396,13 +364,14 @@ class CountryMixer:
         self.insertCountries()
         self.mixFlags()
         print("Base is " + self.template3Code)
-        print(self.first_country['cca3'],
-              self.second_country['cca3'])
-        name = self.calculateNames()
+        print(self.first_country['cca3'], self.second_country['cca3'])
+        first_country_name = self.first_country["name"]['common']
+        second_country_name = self.second_country["name"]['common']
+        name = get_mashup_name(first_country_name, second_country_name)
         print(name)
 
         self.removePNGs()
-        return [self.first_country["name"]['common'], self.second_country["name"]['common']], self.getFlagsEmojis(), name
+        return [first_country_name, second_country_name], self.getFlagsEmojis(), name
 
 
 c = CountryMixer()

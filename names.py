@@ -1,128 +1,66 @@
 import re
 import random
 
-TOOBIG = -1
-TOOSMALL = -2
-NOTNEW = -3
-EMPTY = -1
+SPLIT_PATTERN = r'[aeiouy][^aeiou]'
 
 
-class NameJoiner:
-    def __init__(self, str1, str2):
-        words = [str1, str2]
-        random.shuffle(words)
-        self.fullStartName = words[0]
-        self.fullEndName = words[1]
-        self.initVariables()
+def get_min_mashup_length(first: str, last: str):
+    if ' ' in first and ' ' in last:
+        return min(len(first), len(last)) + 1
+    else:
+        return max(len(first), len(last)) - 1
 
-    def initVariables(self):
-        self.lower_limit = min(len(self.fullStartName), len(self.fullEndName))
-        self.upper_limit = max(len(self.fullStartName), len(self.fullEndName)) + self.lower_limit - 1
-        self.firstPositions = self.getKeyVocalsPositions(self.fullStartName)
-        self.secondPositions = self.getKeyVocalsPositions(self.fullEndName)
 
-    def join(self):
+def get_starts(country: str):
+    # The search is to handle cases like Niue that produce no splits
+    if re.search(SPLIT_PATTERN, country) is not None:
+        regex_iter = re.finditer(SPLIT_PATTERN, country)
+        return [country[0:x.start() + 1] for x in regex_iter]
+    else:
+        return [country]
 
-        res = self.tryToJoin()
-        if res == -1:
-            self.fullStartName, self.fullEndName = self.fullEndName, self.fullStartName
-            self.initVariables()
-            res = self.tryToJoin()
 
-        if res == -1:
-            self.initVariables()
-            return self.fullStartName+self.fullEndName[self.secondPositions[-1]+1:]
+def get_ends(country: str):
+    # The search is to handle cases like Niue that produce no splits
+    if re.search(SPLIT_PATTERN, country) is not None:
+        regex_iter = re.finditer(SPLIT_PATTERN, country)
+        return [country[x.start() + 1:] for x in regex_iter]
+    else:
+        return [country]
 
-        return res
 
-    def tryToJoin(self):
+def normalize_mashup(mashup_to_normalize: str):
+    # Do not capitalize these words
+    no_cap = ['and', 'of', 'the']
+    parsed_list = [x if x in no_cap else x.capitalize() for x in mashup_to_normalize.split(' ')]
+    parsed = ' '.join(parsed_list)
 
-        firstSplitPlace = self.chooseRandomFirstSplit()
-        secondSplitPlace = NOTNEW
-        while secondSplitPlace < 0:
-            secondSplitPlace = self.chooseRandomSecondSplit(firstSplitPlace)
+    # I think this only happens with "Cocos (Keeling) Islands"
+    if '(' in parsed:
+        index = parsed.index('(') + 1
+        parsed = parsed[:index] + parsed[index].upper() + parsed[index+1:]
 
-            if secondSplitPlace < 0:
-                self.handleErrorWithFirstPlace(
-                    secondSplitPlace, firstSplitPlace)
-                firstSplitPlace = self.chooseRandomFirstSplit()
-                if firstSplitPlace == EMPTY:
-                    return EMPTY
+    return parsed
 
-            else:
-                namex = self.fullStartName[:firstSplitPlace] + \
-                    self.fullEndName[secondSplitPlace:]
-                if namex in [self.fullStartName, self.fullEndName]:
-                    self.secondPositions = [
-                        i for i in self.secondPositions if i != secondSplitPlace-1]
-                    if len(self.secondPositions) == 0:
-                        self.secondPositions = self.getKeyVocalsPositions(
-                            self.fullEndName)
-                        self.firstPositions = self.erasePlaceEq(
-                            firstSplitPlace)
-                        firstSplitPlace = self.chooseRandomFirstSplit()
-                        if firstSplitPlace == EMPTY:
-                            return EMPTY
 
-                    secondSplitPlace = NOTNEW
+def get_mashup_name(first_country: str, last_country: str):
+    first = first_country.lower()
+    last = last_country.lower()
 
-        return self.fullStartName[:firstSplitPlace] + self.fullEndName[secondSplitPlace:]
+    if first == last:
+        return f'{first_country} 2'
 
-    def handleErrorWithFirstPlace(self, error, firstSplitPlace):
-        if error == TOOBIG:  # Need smaller first part
-            self.firstPositions = self.erasePlacesGreaterEq(firstSplitPlace)
+    first_starts = get_starts(first)
+    last_ends = get_ends(last)
 
-        elif error == TOOSMALL:  # Need greater first part
-            self.firstPositions = self.erasePlacesLowerEq(firstSplitPlace)
+    min_length = get_min_mashup_length(first, last)
 
-    def erasePlaceEq(self, position):
-        p = position - 1
-        res = [i for i in self.firstPositions if i != p]
+    # Remove anything that is shorter than any of the names. Also remove the original countries if they reappear.
+    mixes = [x + y for x in first_starts for y in last_ends if len(x + y) >= min_length and x + y not in [first, last]]
 
-        return res
+    selected = random.choice(mixes)
 
-    def erasePlacesLowerEq(self, position):
-        p = position - 1
-        res = [i for i in self.firstPositions if i > p]
+    if ' ' in selected:
+        return normalize_mashup(selected)
 
-        return res
-
-    def erasePlacesGreaterEq(self, position):
-        p = position - 1
-        res = [i for i in self.firstPositions if i < p]
-
-        return res
-
-    def chooseRandomFirstSplit(self):
-
-        if len(self.firstPositions) == 0:
-            print(
-                f"{self.fullStartName} has been omitted while trying to join with {self.fullEndName}")
-            return -1
-        pos = random.choice(self.firstPositions) + 1
-
-        return pos
-
-    def getKeyVocalsPositions(self, s):
-        regex_iter = re.finditer(r'[aeiouy][^aeiou]', s.lower())
-        positions = [i.start() for i in regex_iter]
-        return positions
-
-    def chooseRandomSecondSplit(self, firstSplitPlace):
-
-        minimumCharactersLeft = self.lower_limit - firstSplitPlace
-        maximumCharactersLeft = self.upper_limit - firstSplitPlace
-
-        minimumIndex = len(self.fullEndName) - maximumCharactersLeft
-        maximumIndex = len(self.fullEndName) - minimumCharactersLeft
-
-        filtered_big_positions = [
-            i for i in self.secondPositions if i <= maximumIndex]
-        if len(filtered_big_positions) == 0:
-            return -2
-        filtered_positions = [
-            i for i in self.secondPositions if minimumIndex <= i + 1 <= maximumIndex]
-        if len(filtered_positions) == 0:
-            return -1
-
-        return random.choice(filtered_positions) + 1
+    return selected.capitalize()
