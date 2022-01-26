@@ -68,7 +68,7 @@ class TestNameJoiner(unittest.TestCase):
 
     def test_normalize_with_parenthesis(self):
         normalized = normalize_mashup('islands (far) faway')
-        expected = 'Islands (Far) Faway'
+        expected = 'Islands Far Faway'
         self.assertEqual(normalized, expected)
 
     def test_skip_normalizing_articles(self):
